@@ -1,20 +1,15 @@
 from urllib2 import urlopen
 import MySQLdb
-from suggest.models import Feed,Dump,Temp
+from suggest.models import Feed
 import pdb
 from datetime import datetime 
-CLIMIT="1000"
-ULIMIT="500"
 
 def insert_data(pid,gname,gid,pmessage,username,userid,ctime,utime):
-	# To insert messge data into database 
-	ctime=ctime.split('+')[0]
-	utime=utime.split('+')[0]
 	querystring="Insert into suggest_dump  values ('%s','%s','%s','%s','%s','%s','%s','%s','""','""','""')" %(pid,gname,gid,pmessage,username,userid,ctime,utime)
 	#print querystring
 	querytemp=querystring.replace("suggest_dump","suggest_temp")
 	try:
-		db=MySQLdb.connect(host="localhost",user="root",passwd="root",db="mu")
+		db=MySQLdb.connect(host="localhost",user="root",passwd="root",db="test")
 	   	cur=db.cursor()
 		a="printval"
 		cur.execute(querystring)
@@ -23,21 +18,18 @@ def insert_data(pid,gname,gid,pmessage,username,userid,ctime,utime):
        		db.commit()
         	db.close()
 	except MySQLdb.Error,e:	  
-		print "eception occured",e
+		#print "eception occured"
+		#print e
 		try:
 			cur.execute(querytemp)
 			cur.close()
 			db.commit()
 			db.close()
 		except MySQLdb.Error,e:
-			print "eception occured",e
-		
-	except Exception,e:
-		print "exception occured for post id",pid,e 
+			pass
 	
 
 def extract_data(dic,gid):
-	# To obtain data for each message 
 	for d in dic["data"]:
 		#print d
         	pid=d['id']
@@ -48,7 +40,7 @@ def extract_data(dic,gid):
 	        	pmessage= d['message']
 		else:
 			pmessage="" 
-		#print "post id",pid,"is obtained"
+		#print pmessage
         	ctime=d['created_time']
 		utime=d['updated_time']
 		pmessage=pmessage.replace("(","")
@@ -60,10 +52,9 @@ def extract_data(dic,gid):
 		             
 
 
-def get_data(gid,token,next,level,visited,ulimit):
-	# To travese through each facebook page 
+def get_data(gid,token,next,level,visited):
 	if(level==1):
-		url="https://graph.facebook.com/"+gid+"/feed?limit="+ulimit+"&access_token="+token
+		url="https://graph.facebook.com/"+gid+"/feed?limit=500&access_token="+token
 	elif(level==2):
 		url=next
 	else :
@@ -90,45 +81,17 @@ def get_data(gid,token,next,level,visited,ulimit):
 
 
 def run_update(gidlist):
-	# to create data entries for existing urls
 	visited=True
 	for gid in gidlist:
-		#print gid 
+		print gid 
 		level=1
 		next="access_token"
 		#pdb.set_trace()
 		while next!="":
 			next=next.replace("\/","/")
-			#print next,"inside while"
+			print next,"inside while"
 			if(level==1):
-				next=get_data(gid,token,next,level,visited,ULIMIT)
-				level=2
-			else :
-				if(level==2):
-					#print gid
-					#print token
-					#print next
-					#print level
-                        		#pdb.set_trace()
-					next=next.replace("limit=1000","limit="+ULIMIT)
-					next=get_data(gid,token,next,level,visited,ULIMIT)
-					level=3
-				else:
-					next=get_data(gid,token,next,level,visited,ULIMIT)
-				
-def run_create(newlist):
-	#to create data entries for new url
-	visited=False
-	for gid in newlist:
-		#print gid 
-		level=1
-		next="access_token"
-		#pdb.set_trace()
-		while next!="":
-			next=next.replace("\/","/")
-			#print next,"inside while"
-			if(level==1):
-				next=get_data(gid,token,next,level,visited,CLIMIT)
+				next=get_data(gid,token,next,level,visited)
 				level=2
 			else :
 				if(level==2):
@@ -138,29 +101,49 @@ def run_create(newlist):
 					#print level
                         		#pdb.set_trace()
 					next=next.replace("limit=1000","limit=500")
-					next=get_data(gid,token,next,level,visited,CLIMIT)
+					next=get_data(gid,token,next,level,visited)
 					level=3
 				else:
-					next=get_data(gid,token,next,level,visited,CLIMIT)
+					next=get_data(gid,token,next,level,visited)
+				
+def run_create(newlist):
+	visited=False
+	for gid in newlist:
+		print gid 
+		level=1
+		next="access_token"
+		#pdb.set_trace()
+		while next!="":
+			next=next.replace("\/","/")
+			print next,"inside while"
+			if(level==1):
+				next=get_data(gid,token,next,level,visited)
+				level=2
+			else :
+				if(level==2):
+					#print gid
+					#print token
+					#print next
+					#print level
+                        		#pdb.set_trace()
+					next=next.replace("limit=1000","limit=500")
+					next=get_data(gid,token,next,level,visited)
+					level=3
+				else:
+					next=get_data(gid,token,next,level,visited)
 
 
 
 def get_feed():
-	#to get the group url list from data base
 	for row in Feed.objects.all():
-		try:
-			gidlist=[]
-			#pdb.set_trace()
-			gidlist.append(row.gid)
-			if(row.gstatus=='U'):
-				run_update(gidlist)
-			elif(row.gstatus=='C'):
-				run_create(gidlist)
-				row.gstatus='U'
+		gidlist=[]
+		gidlist.append(row.gid)
+		run_update(gidlist)
+		try :
 			row.gutime=datetime.now()
 			row.save()
-		except Exception, e:
-			print "exception occured for value ",row.gid,e 
+		except e:
+			print "exception occured for value ",row.gid 
 		
 
 
@@ -195,19 +178,18 @@ gid="106319576114470"#uscfall2011
 token="CAAF4OpEnBMIBAMLdR9994eHdm0bmIgqOTntBXiAhEN8IwrkKjhdEUzUIet9rZCcudF7FVSS8buGJTNh8BJylkWnnUwW0brCQHmUcj1r1IDfxXCHmbogUObtza2yUvkTL15PVE2jIe6AySQikvL4bMpbnrDS5uj6OWe1DwooZCXdn7bZBj4Yvw1XHF7ZAhxEZD"
 next="acces_token"
 gidlist=['333039026750643','341591699228709','333961479991731','324969354265911','409595849094960','333920903329122','491533930864885','560425023973997','150766218418138','333038996750646','333918209996058','333918209996058','22586725313','333875460000333','334056999982179','334056999982179','334056999982179','333039016750644','2211303362','357239704394798','334098683311344','334001126654433','334001126654433','334063376648208','389570297764182','334504473270765','2200556148','333927766661769','333038976750648','106319576114470']
-def msg_time():
-	# To get time taken for running job for particular number of messages 
-	for i in range(20, 25,10):
-		start=datetime.now()
-		ULIMIT=str(i)
-		get_feed()
-		print "Number of Messages ",ULIMIT, " TimeTaken ",(datetime.now()-start).microseconds
-		Temp.objects.all().delete()
-		Dump.objects.all().delete()
+get_feed()
 
-def main():
-	# Calls the feed
-	get_feed()
-
-main()
+newlist=[]
 				
+
+"""
+#get_data("333039026750643","CAACEdEose0cBAN7TKxn3wWABq6lED8a9d4PgweXbqbhTa92d6ksZCUbDlZCEJQDv5NdYcJZBZBl8MuzX83lVzPZBIJYwMfEL2dNMhi9mc9ZA2L95AmG7G9JJZBQzrZB0VMfkOFCYdqsHZB4I4TbiDsIPGlFEzhZBXJLbC5oJfgMZBT8muU2ynTZB2yMFRF7wK9sJSQsPWqIrZB1fpjgZDZD")
+
+#get_data("341591699228709","CAACEdEose0cBAAJ84t9abgecBo4jVU9MKzlTdQPVykiobMZC7ZBJnJeDuCmZBPVL608StvWaQKSZAnRrmN3N6McMA3Kt97wHB5TuZCYIpEodZCL9IRYXwOHmZBZBsujAN2j3l17rny9x5eZC96XuBbtj00bdcvjlDsCvxZBLXyxv8kTqrTLHqCkv4PpE7ELZBAxBLZA48k7dUekHyAZDZD")
+
+#get_data("415168521871026","CAACEdEose0cBAAJ84t9abgecBo4jVU9MKzlTdQPVykiobMZC7ZBJnJeDuCmZBPVL608StvWaQKSZAnRrmN3N6McMA3Kt97wHB5TuZCYIpEodZCL9IRYXwOHmZBZBsujAN2j3l17rny9x5eZC96XuBbtj00bdcvjlDsCvxZBLXyxv8kTqrTLHqCkv4PpE7ELZBAxBLZA48k7dUekHyAZDZD")
+
+#get_data("357990630922149","CAACEdEose0cBAAJ84t9abgecBo4jVU9MKzlTdQPVykiobMZC7ZBJnJeDuCmZBPVL608StvWaQKSZAnRrmN3N6McMA3Kt97wHB5TuZCYIpEodZCL9IRYXwOHmZBZBsujAN2j3l17rny9x5eZC96XuBbtj00bdcvjlDsCvxZBLXyxv8kTqrTLHqCkv4PpE7ELZBAxBLZA48k7dUekHyAZDZD")
+
+"""

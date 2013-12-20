@@ -2,7 +2,8 @@ from urllib2 import urlopen
 import MySQLdb
 from suggest.models import Feed,Dump,Temp
 import pdb
-from datetime import datetime 
+from datetime import datetime
+from django.db.models import Q
 CLIMIT="1000"
 ULIMIT="500"
 
@@ -10,25 +11,16 @@ def insert_data(pid,gname,gid,pmessage,username,userid,ctime,utime):
 	# To insert messge data into database 
 	ctime=ctime.split('+')[0]
 	utime=utime.split('+')[0]
-	querystring="Insert into suggest_dump  values ('%s','%s','%s','%s','%s','%s','%s','%s','""','""','""')" %(pid,gname,gid,pmessage,username,userid,ctime,utime)
-	#print querystring
-	querytemp=querystring.replace("suggest_dump","suggest_temp")
 	try:
-		db=MySQLdb.connect(host="localhost",user="root",passwd="root",db="mu")
-	   	cur=db.cursor()
-		a="printval"
-		cur.execute(querystring)
-		cur.execute(querytemp)
-        	cur.close()
-       		db.commit()
-        	db.close()
+		Dump.objects.create(pid=pid,gp=gname,gid=gid,
+                                   msg=pmessage,name=username,nameid=userid,ctime=ctime,utime=utime,clink="",llink="",link="",event_seen=0)
+		Temp.objects.create(pid=pid,gp=gname,gid=gid,
+			        msg=pmessage,name=username,nameid=userid,ctime=ctime,utime=utime,clink="",llink="",link="")
 	except MySQLdb.Error,e:	  
 		print "eception occured",e
 		try:
-			cur.execute(querytemp)
-			cur.close()
-			db.commit()
-			db.close()
+			Temp.objects.create(pid=pid,gp=gname,gid=gid,
+                                msg=pmessage,name=username,nameid=userid,ctime=ctime,utime=utime,clink="",llink="",link="")
 		except MySQLdb.Error,e:
 			print "eception occured",e
 		
@@ -147,7 +139,7 @@ def run_create(newlist):
 
 def get_feed():
 	#to get the group url list from data base
-	for row in Feed.objects.all():
+	for row in Feed.objects.all().filter(Q(gstatus='U') | Q(gstatus='C') ):
 		try:
 			gidlist=[]
 			#pdb.set_trace()

@@ -117,6 +117,9 @@ def run_create(newlist):
 		next="access_token"
 		#pdb.set_trace()
 		while next!="":
+			next=next.replace("\/","/")
+			#print next,"inside while"
+			if(level==1):
 				next=get_data(gid,token,next,level,visited,CLIMIT)
 				level=2
 			else :
@@ -153,8 +156,37 @@ def get_feed():
 		
 
 
+gid="341591699228709"#Viterbi School of Engineering
+gid="fall2013usc"
+gid="333961479991731"#Computer Science
+gid="324969354265911"#FREE FOOD u0040 USC  
+gid="409595849094960"#USC Ticket Trades 
+gid="333920903329122"# USC Graduate Students
+gid="491533930864885" #usc fall 2013
+gid="560425023973997"#fall2013usc
+gid="150766218418138"#uscfall2013bangalore
+gid="116047931844982"#uscfall2012
+gid="333038996750646"#jobsandinternship
+gid="333918209996058"#uscbusinessadministration
+gid="22586725313"#uscfall2013official
+gid="333875460000333"#uscclassof2013
+gid="334056999982179"#classof2016
+gid="333039016750644"#Housing
+gid="2211303362"#uscacm
+gid="333039026750643"#Free & For Sale 
+gid="357239704394798"# usc linux group 
+gid="334098683311344"#music industry
+gid="334001126654433"#electrical engineering
+gid="334063376648208"#psycology
+gid="389570297764182"#internation students
+gid="334504473270765"#student entreprenues
+gid="2200556148"#ais
+gid="333927766661769"#class2014
+gid="333038976750648" #campustips
+gid="106319576114470"#uscfall2011
 token="CAAF4OpEnBMIBAMLdR9994eHdm0bmIgqOTntBXiAhEN8IwrkKjhdEUzUIet9rZCcudF7FVSS8buGJTNh8BJylkWnnUwW0brCQHmUcj1r1IDfxXCHmbogUObtza2yUvkTL15PVE2jIe6AySQikvL4bMpbnrDS5uj6OWe1DwooZCXdn7bZBj4Yvw1XHF7ZAhxEZD"
 next="acces_token"
+gidlist=['333039026750643','341591699228709','333961479991731','324969354265911','409595849094960','333920903329122','491533930864885','560425023973997','150766218418138','333038996750646','333918209996058','333918209996058','22586725313','333875460000333','334056999982179','334056999982179','334056999982179','333039016750644','2211303362','357239704394798','334098683311344','334001126654433','334001126654433','334063376648208','389570297764182','334504473270765','2200556148','333927766661769','333038976750648','106319576114470']
 def msg_time():
 	# To get time taken for running job for particular number of messages 
 	for i in range(20, 25,10):

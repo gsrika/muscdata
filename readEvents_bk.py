@@ -78,7 +78,8 @@ def event_grab(event_id):
                                 "owner_name='%s',owner_id=%s,name='%s',description='%s',start_time='%s',end_time='%s',is_date_only=%s,location='%s',latitude=%s,longitude=%s,venue_id=%s,state='%s',city='%s',street='%s',zipcode=%s,is_active=1;"\
                                 %(insert_dict["event_id"],insert_dict["owner_name"],insert_dict["owner_id"],insert_dict["name"],insert_dict["description"],insert_dict["start_time"],insert_dict["end_time"],insert_dict["is_date_only"],insert_dict["location"],insert_dict["latitude"],insert_dict["longitude"],insert_dict["venue_id"],insert_dict["state"],insert_dict["city"],insert_dict["street"],insert_dict["zip"],insert_dict["owner_name"],insert_dict["owner_id"],insert_dict["name"],insert_dict["description"],insert_dict["start_time"],insert_dict["end_time"],insert_dict["is_date_only"],insert_dict["location"],insert_dict["latitude"],insert_dict["longitude"],insert_dict["venue_id"],insert_dict["state"],insert_dict["city"],insert_dict["street"],insert_dict["zip"])
     try:
-	db=MySQLdb.connect(host="localhost",user="root",passwd="root",db="mu")
+	#print insert_statement
+        db=MySQLdb.connect(host="localhost",user="root",passwd="root",db="mu")
         cur=db.cursor()
         cur.execute(insert_statement)
         cur.close()
@@ -128,6 +129,8 @@ def get_data(gid,token,next,level,visited,ulimit):
 	s=s.replace("true","True")
 	s=s.replace("null","")
 	dic=eval(s)
+	#print(type(dic))
+	#print type(dic)
 	extract_data(dic,gid)
 	if(dic.has_key('paging')):
 		if "next" in dic.keys():
@@ -142,6 +145,7 @@ def run_create(newlist):
 	#to create data entries for new url
 	visited=False
 	for gid in newlist:
+		#print gid 
 		level=1
 		next="access_token"
 		#pdb.set_trace()
@@ -157,6 +161,7 @@ def get_feed1():
 	for row in Feed.objects.all().filter(Q(gstatus='U') | Q(gstatus='C') ):
 		try:
 			gidlist=[]
+			#pdb.set_trace()
 			gidlist.append(row.gid)
 			run_create(gidlist)
 		except Exception, e:
@@ -170,12 +175,13 @@ def get_feed2():
 			msg=row.msg
 			msg=msg.replace("\/","/")
 			for s in re.findall('http[s]?://[^\s<>"]+|www\.[^\s<>"]+', msg):
+				#pdb.set_trace()
 				a=s.encode("ascii","replace")
 				if(a.startswith("https://www.facebook.com/events/")):
 					gid=(a.strip("https://www.facebook.com/events/")).split('/')[0]
 					event_grab(gid)
-			row.event_seen=1
-			row.save()
+				row.event_seen=1
+				row.save()
 		except Exception,e:
 			print "exception occured at ",e,gid,s,row.pid  
 
@@ -196,5 +202,6 @@ def main():
 	# Calls the feed
 	get_feed1()
         get_feed2()
+	#event_grab("200945516755444")
 main()
 				

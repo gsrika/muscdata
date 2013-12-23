@@ -20,7 +20,7 @@ def event_grab(event_id):
     insert_dict = {}
     for k in keys:
         if k in event_dict.keys():
-	    insert_dict[k] =event_dict[k]
+            insert_dict[k] = event_dict[k]
         else:
             insert_dict[k] = ''
     if insert_dict['is_date_only'] == True and insert_dict["start_time"]!='':
@@ -29,7 +29,7 @@ def event_grab(event_id):
         return
     if insert_dict['end_time']=='':
         s = facebook_date(insert_dict["start_time"])
-        insert_dict["end_time"] = datetime(s.year,s.month,s.day,11,59)
+        insert_dict["end_time"] = datetime.datetime(s.year,s.month,s.day,11,59)
     else:
         insert_dict["end_time"] = facebook_date(insert_dict["end_time"])
     insert_dict["event_id"] = event_id
@@ -62,31 +62,28 @@ def event_grab(event_id):
             insert_dict["zip"] = "NULL"
     insert_dict["active"] = True
     insert_dict['start_time'] = facebook_date(insert_dict['start_time'])
-    for k in ['venue_id','zip','is_date_only']:
-	if  insert_dict[k] == "" :
-	    insert_dict[k] = "NULL"    
     for key in insert_dict.keys():
-        if insert_dict[key].__class__ == str :
+        if insert_dict[key].__class__ == str or insert_dict[key].__class__ == unicode:
             insert_dict[key] = MySQLdb.escape_string(insert_dict[key])
-	elif insert_dict[key].__class__ == unicode :
-	    insert_dict[key] = insert_dict[key].encode("ascii","replace")
-	    insert_dict[key] = insert_dict[key].replace("?","")
-	    insert_dict[key] = MySQLdb.escape_string(insert_dict[key])
-    insert_statement = "Insert into suggest_event (event_id,owner_name,owner_id,name,description,start_time,end_time,is_date_only,location,latitude,longitude,venue_id,state,city,street,zipcode,is_active) VALUES"\
+    insert_statement = "Insert into suggest_event (event_id,owner_name,owner_id,name,description,start_time,end_time,is_date_only,location,latitude,longitude,venue_id,state,city,street,zip,is_active) VALUES"\
                                 "(%s,'%s',%s,'%s','%s','%s','%s',%s,'%s',%s,%s,%s,'%s','%s','%s',%s,1) "\
                                 "ON DUPLICATE KEY UPDATE "\
-                                "owner_name='%s',owner_id=%s,name='%s',description='%s',start_time='%s',end_time='%s',is_date_only=%s,location='%s',latitude=%s,longitude=%s,venue_id=%s,state='%s',city='%s',street='%s',zipcode=%s,is_active=1;"\
+                                "owner_name='%s',owner_id=%s,name='%s',description='%s',start_time='%s',end_time='%s',is_date_only=%s,location='%s',latitude=%s,longitude=%s,venue_id=%s,state='%s',city='%s',street='%s',zip=%s,is_active=1;"\
                                 %(insert_dict["event_id"],insert_dict["owner_name"],insert_dict["owner_id"],insert_dict["name"],insert_dict["description"],insert_dict["start_time"],insert_dict["end_time"],insert_dict["is_date_only"],insert_dict["location"],insert_dict["latitude"],insert_dict["longitude"],insert_dict["venue_id"],insert_dict["state"],insert_dict["city"],insert_dict["street"],insert_dict["zip"],insert_dict["owner_name"],insert_dict["owner_id"],insert_dict["name"],insert_dict["description"],insert_dict["start_time"],insert_dict["end_time"],insert_dict["is_date_only"],insert_dict["location"],insert_dict["latitude"],insert_dict["longitude"],insert_dict["venue_id"],insert_dict["state"],insert_dict["city"],insert_dict["street"],insert_dict["zip"])
     try:
-	db=MySQLdb.connect(host="localhost",user="root",passwd="root",db="mu")
+        db=MySQLdb.connect(host="localhost",user="root",passwd="root",db="mu")
         cur=db.cursor()
         cur.execute(insert_statement)
         cur.close()
-	print "success"
+	#print "success"
         db.commit()
         db.close()
     except MySQLdb.Error,e:
         print "eception occured in inserting",e,event_id
+
+    
+
+
 
 
 def should_grab_date(date_time_string):
@@ -120,7 +117,7 @@ def get_data(gid,token,next,level,visited,ulimit):
 		url="https://graph.facebook.com/"+gid+"/events/?fields=start_time"+"&limit="+ulimit+"&access_token="+token
 	elif(level==2):
 		url=next
-	#print(url)
+	print(url)
 	html=urlopen(url)
 	s=html.read()
 	s=s.replace("\n","\\n")
@@ -128,6 +125,8 @@ def get_data(gid,token,next,level,visited,ulimit):
 	s=s.replace("true","True")
 	s=s.replace("null","")
 	dic=eval(s)
+	#print(type(dic))
+	#print type(dic)
 	extract_data(dic,gid)
 	if(dic.has_key('paging')):
 		if "next" in dic.keys():
@@ -137,11 +136,41 @@ def get_data(gid,token,next,level,visited,ulimit):
 	else:
 		next=""
 	return next
+
+
+
+def run_update(gidlist):
+	# to create data entries for existing urls
+	visited=True
+	for gid in gidlist:
+		#print gid 
+		level=1
+		next="access_token"
+		#pdb.set_trace()
+		while next!="":
+			next=next.replace("\/","/")
+			#print next,"inside while"
+			if(level==1):
+				next=get_data(gid,token,next,level,visited,ULIMIT)
+				level=2
+			else :
+				if(level==2):
+					#print gid
+					#print token
+					#print next
+					#print level
+                        		#pdb.set_trace()
+					next=next.replace("limit=1000","limit="+ULIMIT)
+					next=get_data(gid,token,next,level,visited,ULIMIT)
+					level=3
+				else:
+					next=get_data(gid,token,next,level,visited,ULIMIT)
 				
 def run_create(newlist):
 	#to create data entries for new url
 	visited=False
 	for gid in newlist:
+		#print gid 
 		level=1
 		next="access_token"
 		#pdb.set_trace()
@@ -157,6 +186,7 @@ def get_feed1():
 	for row in Feed.objects.all().filter(Q(gstatus='U') | Q(gstatus='C') ):
 		try:
 			gidlist=[]
+			#pdb.set_trace()
 			gidlist.append(row.gid)
 			run_create(gidlist)
 		except Exception, e:
@@ -170,14 +200,16 @@ def get_feed2():
 			msg=row.msg
 			msg=msg.replace("\/","/")
 			for s in re.findall('http[s]?://[^\s<>"]+|www\.[^\s<>"]+', msg):
-				a=s.encode("ascii","replace")
+				a=str(s)
 				if(a.startswith("https://www.facebook.com/events/")):
 					gid=(a.strip("https://www.facebook.com/events/")).split('/')[0]
 					event_grab(gid)
-			row.event_seen=1
-			row.save()
+							 
+			#row.event_seen=1
+			#row.save()
 		except Exception,e:
-			print "exception occured at ",e,gid,s,row.pid  
+			print "exception occured at ",e,gid  
+
 
 
 token="CAAF4OpEnBMIBAMLdR9994eHdm0bmIgqOTntBXiAhEN8IwrkKjhdEUzUIet9rZCcudF7FVSS8buGJTNh8BJylkWnnUwW0brCQHmUcj1r1IDfxXCHmbogUObtza2yUvkTL15PVE2jIe6AySQikvL4bMpbnrDS5uj6OWe1DwooZCXdn7bZBj4Yvw1XHF7ZAhxEZD"
@@ -194,7 +226,10 @@ def msg_time():
 
 def main():
 	# Calls the feed
+	#list=['172087739658866']
+	#run_create(list)
 	get_feed1()
         get_feed2()
+	#event_grab("532728406805329")
 main()
 				

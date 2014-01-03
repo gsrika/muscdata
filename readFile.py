@@ -5,7 +5,7 @@ import pdb
 from datetime import datetime
 from django.db.models import Q
 CLIMIT="1000"
-ULIMIT="500"
+ULIMIT="20"
 
 def insert_data(pid,gname,gid,pmessage,username,userid,ctime,utime):
 	# To insert messge data into database 
@@ -117,6 +117,8 @@ def run_create(newlist):
 		next="access_token"
 		#pdb.set_trace()
 		while next!="":
+			next=next.replace("\/","/")
+			if(level==1):			
 				next=get_data(gid,token,next,level,visited,CLIMIT)
 				level=2
 			else :
@@ -136,7 +138,7 @@ def run_create(newlist):
 
 def get_feed():
 	#to get the group url list from data base
-	for row in Feed.objects.all().filter(Q(gstatus='U') | Q(gstatus='C') ):
+	for row in Feed.objects.all().filter( Q(gstatus='C') | Q(gstatus='U') ):
 		try:
 			gidlist=[]
 			#pdb.set_trace()

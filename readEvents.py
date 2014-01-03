@@ -87,6 +87,7 @@ def event_grab(event_id):
         db.close()
     except MySQLdb.Error,e:
         print "eception occured in inserting",e,event_id
+	raise
 
 
 def should_grab_date(date_time_string):
@@ -195,6 +196,8 @@ def msg_time():
 def main():
 	# Calls the feed
 	get_feed1()
+	start=datetime.now()
         get_feed2()
+	print (datetime.now()-start).seconds
 main()
 				
